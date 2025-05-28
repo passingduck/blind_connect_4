@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>맹인 중력 4목</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }
+
+        .game-container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .column-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .column-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .column-btn.player1 {
+            background: linear-gradient(145deg, #ff6b6b, #ee5a6f);
+            color: white;
+        }
+
+        .column-btn.player2 {
+            background: linear-gradient(145deg, #4ecdc4, #44a3aa);
+            color: white;
+        }
+
+        .column-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .column-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .column-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .board-wrapper {
+            position: relative;
+            width: 490px;
+            height: 420px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .board-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            transition: opacity 0.5s ease;
+        }
+
+        .board-cover.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .piece {
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+            box-shadow: inset 0 -3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .piece.player1 {
+            background: radial-gradient(circle at 30% 30%, #ff8787, #ff6b6b);
+        }
+
+        .piece.player2 {
+            background: radial-gradient(circle at 30% 30%, #6ee7df, #4ecdc4);
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .turn-info {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .turn-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .new-game-btn {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .reveal-btn {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .winner-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px 60px;
+            border-radius: 20px;
+            font-size: 2em;
+            text-align: center;
+            z-index: 100;
+            animation: fadeIn 0.5s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        @keyframes drop {
+            from {
+                transform: translate(-50%, -600%);
+            }
+            to {
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .piece.dropping {
+            animation: drop 0.5s ease-in;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>맹인 중력 4목</h1>
+        
+        <div class="column-numbers">
+            <button class="column-btn player1" data-col="0">1</button>
+            <button class="column-btn player1" data-col="1">2</button>
+            <button class="column-btn player1" data-col="2">3</button>
+            <button class="column-btn player1" data-col="3">4</button>
+            <button class="column-btn player1" data-col="4">5</button>
+            <button class="column-btn player1" data-col="5">6</button>
+            <button class="column-btn player1" data-col="6">7</button>
+        </div>
+        
+        <div class="board-wrapper">
+            <div class="board" id="board"></div>
+            <div class="board-cover" id="boardCover">?</div>
+        </div>
+        
+        <div class="info">
+            <div class="turn-info">
+                현재 차례: <span id="currentPlayer">플레이어 1</span>
+                <span class="turn-indicator" id="turnIndicator" style="background: #ff6b6b;"></span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="new-game-btn" onclick="resetGame()">새 게임</button>
+            <button class="reveal-btn" onclick="toggleBoard()">판 보기/숨기기</button>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 6;
+        const COLS = 7;
+        let board = [];
+        let currentPlayer = 1;
+        let gameOver = false;
+        let boardRevealed = false;
+
+        // 게임 초기화
+        function initGame() {
+            board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            currentPlayer = 1;
+            gameOver = false;
+            boardRevealed = false;
+            document.getElementById('boardCover').classList.remove('hidden');
+            renderBoard();
+            updateUI();
+            removeWinnerMessage();
+        }
+
+        // 보드 렌더링
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    if (board[row][col] !== 0) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece player${board[row][col]}`;
+                        cell.appendChild(piece);
+                    }
+                    
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        // 돌 놓기
+        function dropPiece(col) {
+            if (gameOver) return;
+            
+            col = parseInt(col);
+            
+            // 해당 열이 가득 찼는지 확인
+            if (board[0][col] !== 0) return;
+            
+            // 맨 아래부터 빈 자리 찾기
+            let row = ROWS - 1;
+            while (row >= 0 && board[row][col] !== 0) {
+                row--;
+            }
+            
+            // 돌 놓기
+            board[row][col] = currentPlayer;
+            
+            // 애니메이션과 함께 돌 추가
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const piece = document.createElement('div');
+            piece.className = `piece player${currentPlayer} dropping`;
+            cell.appendChild(piece);
+            
+            // 승리 확인
+            if (checkWin(row, col)) {
+                gameOver = true;
+                setTimeout(() => {
+                    showWinner();
+                    document.getElementById('boardCover').classList.add('hidden');
+                }, 500);
+                return;
+            }
+            
+            // 무승부 확인
+            if (checkDraw()) {
+                gameOver = true;
+                setTimeout(() => {
+                    showDraw();
+                    document.getElementById('boardCover').classList.add('hidden');
+                }, 500);
+                return;
+            }
+            
+            // 플레이어 교체
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateUI();
+        }
+
+        // 승리 확인
+        function checkWin(row, col) {
+            const player = board[row][col];
+            
+            // 가로 확인
+            let count = 1;
+            // 왼쪽
+            for (let c = col - 1; c >= 0 && board[row][c] === player; c--) count++;
+            // 오른쪽
+            for (let c = col + 1; c < COLS && board[row][c] === player; c++) count++;
+            if (count >= 4) return true;
+            
+            // 세로 확인
+            count = 1;
+            // 위
+            for (let r = row - 1; r >= 0 && board[r][col] === player; r--) count++;
+            // 아래
+            for (let r = row + 1; r < ROWS && board[r][col] === player; r++) count++;
+            if (count >= 4) return true;
+            
+            // 대각선 (왼쪽 위 - 오른쪽 아래) 확인
+            count = 1;
+            for (let i = 1; row - i >= 0 && col - i >= 0 && board[row - i][col - i] === player; i++) count++;
+            for (let i = 1; row + i < ROWS && col + i < COLS && board[row + i][col + i] === player; i++) count++;
+            if (count >= 4) return true;
+            
+            // 대각선 (오른쪽 위 - 왼쪽 아래) 확인
+            count = 1;
+            for (let i = 1; row - i >= 0 && col + i < COLS && board[row - i][col + i] === player; i++) count++;
+            for (let i = 1; row + i < ROWS && col - i >= 0 && board[row + i][col - i] === player; i++) count++;
+            if (count >= 4) return true;
+            
+            return false;
+        }
+
+        // 무승부 확인
+        function checkDraw() {
+            for (let col = 0; col < COLS; col++) {
+                if (board[0][col] === 0) return false;
+            }
+            return true;
+        }
+
+        // UI 업데이트
+        function updateUI() {
+            document.getElementById('currentPlayer').textContent = `플레이어 ${currentPlayer}`;
+            document.getElementById('turnIndicator').style.background = currentPlayer === 1 ? '#ff6b6b' : '#4ecdc4';
+            
+            // 버튼 색상 업데이트
+            const buttons = document.querySelectorAll('.column-btn');
+            buttons.forEach(btn => {
+                btn.className = `column-btn player${currentPlayer}`;
+                
+                // 가득 찬 열은 비활성화
+                const col = parseInt(btn.dataset.col);
+                btn.disabled = board[0][col] !== 0 || gameOver;
+            });
+        }
+
+        // 승리 메시지 표시
+        function showWinner() {
+            const winner = currentPlayer;
+            const message = document.createElement('div');
+            message.className = 'winner-message';
+            message.innerHTML = `
+                <h2>🎉 플레이어 ${winner} 승리! 🎉</h2>
+                <p style="margin-top: 20px;">축하합니다!</p>
+            `;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.addEventListener('click', () => {
+                    message.remove();
+                });
+            }, 1000);
+        }
+
+        // 무승부 메시지 표시
+        function showDraw() {
+            const message = document.createElement('div');
+            message.className = 'winner-message';
+            message.innerHTML = `
+                <h2>🤝 무승부! 🤝</h2>
+                <p style="margin-top: 20px;">게임이 비겼습니다!</p>
+            `;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.addEventListener('click', () => {
+                    message.remove();
+                });
+            }, 1000);
+        }
+
+        // 승리 메시지 제거
+        function removeWinnerMessage() {
+            const message = document.querySelector('.winner-message');
+            if (message) message.remove();
+        }
+
+        // 게임 리셋
+        function resetGame() {
+            initGame();
+        }
+
+        // 보드 보기/숨기기 토글
+        function toggleBoard() {
+            const cover = document.getElementById('boardCover');
+            boardRevealed = !boardRevealed;
+            if (boardRevealed) {
+                cover.classList.add('hidden');
+            } else {
+                cover.classList.remove('hidden');
+            }
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            
+            // 버튼 클릭 이벤트
+            const buttons = document.querySelectorAll('.column-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    dropPiece(btn.dataset.col);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
